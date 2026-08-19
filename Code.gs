@@ -12,7 +12,6 @@ function getSafeUi() {
   }
 }
 
-// 安全彈出提示訊息
 function safeAlert(message) {
   const ui = getSafeUi();
   if (ui) {
@@ -22,7 +21,6 @@ function safeAlert(message) {
   }
 }
 
-// 安全顯示 Toast 提示
 function safeToast(message, title = "系統通知", timeoutSeconds = 3) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -35,7 +33,7 @@ function safeToast(message, title = "系統通知", timeoutSeconds = 3) {
 function onOpen() {
   const ui = getSafeUi();
   if (!ui) {
-    console.warn("目前處於無 UI 執行環境（如 Web App 或背景測試），略過選單掛載。");
+    console.warn("目前處於無 UI 執行環境，略過選單掛載。");
     return;
   }
 
@@ -69,7 +67,6 @@ function openSidebar() {
   ui.showSidebar(html);
 }
 
-// 確保手機版與 Web App 正確套用 Viewport 排版
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('index')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
@@ -97,7 +94,7 @@ function initSettingsSheet() {
   sheet.getRange(1, 1, 1, 2).setValues([["帳戶清單", "分類清單"]]).setBackground("#1e293b").setFontColor("#ffffff").setFontWeight("bold");
   
   const accounts = ['現金', 'LINE Pay', 'LINE Bank', '郵局', '永豐銀行', '國泰世華', '玉山銀行', '悠遊卡', '街口支付', '台新Richart'];
-  const categories = ['食', '衣', '住', '行', '育樂', '學習費用', '醫療/雜項', '收入', '初始資產', '代墊款', '代墊回收', '內部轉帳'];
+  const categories = ['食', '衣', '住', '行', '育樂', '學習費用', '醫療/雜項', '收入', '投資', '初始資產', '代墊款', '代墊回收', '內部轉帳'];
   const rows = [];
   for (let i = 0; i < Math.max(accounts.length, categories.length); i++) {
     rows.push([accounts[i] || "", categories[i] || ""]);
@@ -146,7 +143,7 @@ function saveCustomSettings(settings) {
   }
   if (rows.length > 0) sheet.getRange(2, 1, rows.length, 2).setValues(rows);
   sheet.setFrozenRows(1);
-  return { success: true, message: "已成功儲存自訂設定至試算表！" };
+  return { success: true, message: "已成功儲存自訂設定！" };
 }
 
 function getSheetData() {
@@ -182,6 +179,7 @@ function getSheetData() {
   return data;
 }
 
+// 寫入交易：直接採用傳入數值，移除後端硬編碼正負號邏輯
 function addTransaction(item) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -190,14 +188,7 @@ function addTransaction(item) {
     const timeZone = Session.getScriptTimeZone();
 
     const category = String(item.category || "食").trim();
-    let rawAmount = Number(item.amount) || 0;
-
-    const incomeCategories = ['收入', '初始資產', '代墊回收'];
-    if (!incomeCategories.includes(category)) {
-      rawAmount = -Math.abs(rawAmount);
-    } else {
-      rawAmount = Math.abs(rawAmount);
-    }
+    const finalAmount = Number(item.amount) || 0;
 
     const rowData = [
       String(item.date || Utilities.formatDate(new Date(), timeZone, "yyyy-MM-dd")).trim(),
@@ -206,7 +197,7 @@ function addTransaction(item) {
       String(item.name || "未命名項目").trim(),
       category,
       String(item.currency || 'TWD').trim().toUpperCase(),
-      rawAmount,
+      finalAmount,
       String(item.note || "").trim()
     ];
 
@@ -223,34 +214,24 @@ function addTransaction(item) {
   }
 }
 
+// 批次寫入交易：直接採用傳入數值，移除後端硬編碼正負號邏輯
 function batchAddTransactions(items) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     if (!ss) throw new Error("找不到試算表");
     let sheet = ss.getSheetByName("記帳資料") || ss.getActiveSheet();
     const timeZone = Session.getScriptTimeZone();
-    const incomeCategories = ['收入', '初始資產', '代墊回收'];
 
-    const rows = items.map(item => {
-      const category = String(item.category || "食").trim();
-      let rawAmount = Number(item.amount) || 0;
-      if (!incomeCategories.includes(category)) {
-        rawAmount = -Math.abs(rawAmount);
-      } else {
-        rawAmount = Math.abs(rawAmount);
-      }
-
-      return [
-        String(item.date || Utilities.formatDate(new Date(), timeZone, "yyyy-MM-dd")).trim(),
-        String(item.time || Utilities.formatDate(new Date(), timeZone, "HH:mm")).trim(),
-        String(item.account || "現金").trim(),
-        String(item.name || "未命名項目").trim(),
-        category,
-        String(item.currency || 'TWD').trim().toUpperCase(),
-        rawAmount,
-        String(item.note || "").trim()
-      ];
-    });
+    const rows = items.map(item => [
+      String(item.date || Utilities.formatDate(new Date(), timeZone, "yyyy-MM-dd")).trim(),
+      String(item.time || Utilities.formatDate(new Date(), timeZone, "HH:mm")).trim(),
+      String(item.account || "現金").trim(),
+      String(item.name || "未命名項目").trim(),
+      String(item.category || "食").trim(),
+      String(item.currency || 'TWD').trim().toUpperCase(),
+      Number(item.amount) || 0,
+      String(item.note || "").trim()
+    ]);
 
     if (rows.length > 0) {
       sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 8).setValues(rows);
@@ -337,17 +318,25 @@ function callGeminiBookkeeper(userMessage, imageBase64, mimeType, autoSave = fal
   if (!apiKey) return { reply: "⚠️ 尚未設定 GEMINI_API_KEY！請至試算表上方選單點選「設定/更新 Gemini API Key」。", parsedTransactions: [] };
 
   const settings = getCustomSettings();
-  const systemPrompt = `You are an expert multilingual bookkeeping assistant.
+  
+  const systemPrompt = `You are an expert multilingual financial bookkeeping assistant.
 Current Date: ${Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd")}.
 Valid Categories: ${JSON.stringify(settings.categories)}.
 Valid Accounts: ${JSON.stringify(settings.accounts)}.
+
+CRITICAL AMOUNT SIGN RULES:
+1. ANY transaction representing money coming IN (e.g. Salary, dividend/配息, investment profit, cash gifts, refunds, repayment collected/代墊款歸還, selling assets, etc.) MUST have a POSITIVE amount (e.g. 5000).
+2. ANY transaction representing money going OUT (e.g. Buying food/clothes/goods, paying bills, travel expense, haircut, fees, subscription, etc.) MUST have a NEGATIVE amount (e.g. -150).
+3. For internal transfers, distinguish transfer-out as NEGATIVE and transfer-in as POSITIVE based on context.
+4. Do NOT rely solely on category names. Judge strictly by the financial nature of the action described by the user.
+
 Output JSON schema:
 {
   "reply": "Friendly response in Traditional Chinese (zh-TW)",
   "transactions": [
     {
       "name": "Item name",
-      "amount": -100, // Expense MUST be negative number, Income MUST be positive number
+      "amount": -100, // POSITIVE for income/dividends/receipts/inflows, NEGATIVE for expenses/spending/outflows
       "currency": "TWD", // 3-letter uppercase ISO code
       "category": "食", // Must match one of valid categories
       "account": "現金", // Must match one of valid accounts
