@@ -29,7 +29,7 @@ function safeToast(message, title = "系統通知", timeoutSeconds = 3) {
     console.log(`[Toast - ${title}]: ${message}`);
   }
 }
-
+ 
 function onOpen() {
   const ui = getSafeUi();
   if (!ui) {
@@ -361,33 +361,147 @@ Output JSON schema:
     } 
   };
   
-  const modelsToTry = ["gemini-3.5-flash-lite", "gemini-3.5-flash"];
-  let lastError = null;
+  const model = "gemini-3.5-flash-lite";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
+  
+  try {
+    const res = UrlFetchApp.fetch(url, { 
+      method: "post", 
+      contentType: "application/json", 
+      payload: JSON.stringify(payload), 
+      muteHttpExceptions: true 
+    });
+    
+    if (res.getResponseCode() === 200) {
+      const json = JSON.parse(res.getContentText());
+      const parsed = JSON.parse(json.candidates[0].content.parts[0].text);
+      const txs = parsed.transactions || [];
 
-  for (let m = 0; m < modelsToTry.length; m++) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelsToTry[m]}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
-    try {
-      const res = UrlFetchApp.fetch(url, { 
-        method: "post", 
-        contentType: "application/json", 
-        payload: JSON.stringify(payload), 
-        muteHttpExceptions: true 
-      });
-      
-      if (res.getResponseCode() === 200) {
-        const json = JSON.parse(res.getContentText());
-        const parsed = JSON.parse(json.candidates[0].content.parts[0].text);
-        const txs = parsed.transactions || [];
-
-        return { 
-          reply: parsed.reply || "解析成功！請核對以下記帳明細：", 
-          parsedTransactions: txs 
-        };
-      }
-      lastError = res.getContentText();
-    } catch (err) { 
-      lastError = err.toString(); 
+      return { 
+        reply: parsed.reply || "解析成功！請核對以下記帳明細：", 
+        parsedTransactions: txs 
+      };
     }
+    return { reply: "⚠️ 調用 Gemini API (gemini-3.5-flash-lite) 發生錯誤：" + res.getContentText(), parsedTransactions: [] };
+  } catch (err) { 
+    return { reply: "⚠️ 調用 Gemini API (gemini-3.5-flash-lite) 發生錯誤：" + err.toString(), parsedTransactions: [] };
   }
-  return { reply: "⚠️ 調用 Gemini API 發生錯誤：" + lastError, parsedTransactions: [] };
+}
+
+/**
+ * 🗑️ 級聯刪除帳戶：同步刪除「系統設定」中的帳戶，並遍歷刪除「記帳資料」中所有包含該帳戶的列
+ */
+function deleteAccountCascade(accountName) {
+  try {
+    const targetAccount = String(accountName || "").trim();
+    if (!targetAccount) throw new Error("未提供欲刪除的帳戶名稱");
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) throw new Error("找不到試算表");
+
+    // 1. 從「系統設定」工作表移除帳戶
+    const settingsSheet = ss.getSheetByName("系統設定");
+    if (settingsSheet) {
+      const settingsData = settingsSheet.getDataRange().getValues();
+      let newAccounts = [];
+      let existingCategories = [];
+      for (let i = 1; i < settingsData.length; i++) {
+        const acc = String(settingsData[i][0] || "").trim();
+        const cat = String(settingsData[i][1] || "").trim();
+        if (acc && acc !== targetAccount) newAccounts.push(acc);
+        if (cat) existingCategories.push(cat);
+      }
+      
+      settingsSheet.clear();
+      settingsSheet.getRange(1, 1, 1, 2).setValues([["帳戶清單", "分類清單"]]).setBackground("#1e293b").setFontColor("#ffffff").setFontWeight("bold");
+      const rows = [];
+      for (let i = 0; i < Math.max(newAccounts.length, existingCategories.length); i++) {
+        rows.push([newAccounts[i] || "", existingCategories[i] || ""]);
+      }
+      if (rows.length > 0) settingsSheet.getRange(2, 1, rows.length, 2).setValues(rows);
+      settingsSheet.setFrozenRows(1);
+    }
+
+    // 2. 從「記帳資料」工作表中逆向遍歷並刪除包含該帳戶的所有資料列
+    const accountingSheet = ss.getSheetByName("記帳資料") || ss.getActiveSheet();
+    let deletedRowsCount = 0;
+    if (accountingSheet) {
+      const data = accountingSheet.getDataRange().getValues();
+      // 從最後一列往第二列逆向遍歷（避開標題列），防止列號偏移
+      for (let i = data.length - 1; i >= 1; i--) {
+        const rowAccount = String(data[i][2] || "").trim();
+        if (rowAccount === targetAccount) {
+          accountingSheet.deleteRow(i + 1);
+          deletedRowsCount++;
+        }
+      }
+    }
+
+    return {
+      success: true,
+      deletedCount: deletedRowsCount,
+      message: `已成功刪除帳戶「${targetAccount}」，並清除後端 ${deletedRowsCount} 筆關聯記帳記錄！`
+    };
+  } catch (error) {
+    throw new Error("級聯刪除帳戶失敗: " + error.message);
+  }
+}
+
+/**
+ * 🗑️ 級聯刪除分類：同步刪除「系統設定」中的分類，並遍歷刪除「記帳資料」中所有包含該分類的列
+ */
+function deleteCategoryCascade(categoryName) {
+  try {
+    const targetCategory = String(categoryName || "").trim();
+    if (!targetCategory) throw new Error("未提供欲刪除的分類名稱");
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) throw new Error("找不到試算表");
+
+    // 1. 從「系統設定」工作表移除分類
+    const settingsSheet = ss.getSheetByName("系統設定");
+    if (settingsSheet) {
+      const settingsData = settingsSheet.getDataRange().getValues();
+      let existingAccounts = [];
+      let newCategories = [];
+      for (let i = 1; i < settingsData.length; i++) {
+        const acc = String(settingsData[i][0] || "").trim();
+        const cat = String(settingsData[i][1] || "").trim();
+        if (acc) existingAccounts.push(acc);
+        if (cat && cat !== targetCategory) newCategories.push(cat);
+      }
+      
+      settingsSheet.clear();
+      settingsSheet.getRange(1, 1, 1, 2).setValues([["帳戶清單", "分類清單"]]).setBackground("#1e293b").setFontColor("#ffffff").setFontWeight("bold");
+      const rows = [];
+      for (let i = 0; i < Math.max(existingAccounts.length, newCategories.length); i++) {
+        rows.push([existingAccounts[i] || "", newCategories[i] || ""]);
+      }
+      if (rows.length > 0) settingsSheet.getRange(2, 1, rows.length, 2).setValues(rows);
+      settingsSheet.setFrozenRows(1);
+    }
+
+    // 2. 從「記帳資料」工作表中逆向遍歷並刪除包含該分類的所有資料列
+    const accountingSheet = ss.getSheetByName("記帳資料") || ss.getActiveSheet();
+    let deletedRowsCount = 0;
+    if (accountingSheet) {
+      const data = accountingSheet.getDataRange().getValues();
+      // 從最後一列往第二列逆向遍歷（避開標題列），防止列號偏移
+      for (let i = data.length - 1; i >= 1; i--) {
+        const rowCategory = String(data[i][4] || "").trim();
+        if (rowCategory === targetCategory) {
+          accountingSheet.deleteRow(i + 1);
+          deletedRowsCount++;
+        }
+      }
+    }
+
+    return {
+      success: true,
+      deletedCount: deletedRowsCount,
+      message: `已成功刪除分類「${targetCategory}」，並清除後端 ${deletedRowsCount} 筆關聯記帳記錄！`
+    };
+  } catch (error) {
+    throw new Error("級聯刪除分類失敗: " + error.message);
+  }
 }

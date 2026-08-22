@@ -40,6 +40,16 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 流水帳明細表格 RWD 響應式排版 (手機版 <= 768px 隱藏支付帳戶、項目說明、原始金額、備註) */
+        @media (max-width: 768px) {
+            .col-account,
+            .col-name,
+            .col-original-amount,
+            .col-note {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-full flex flex-col antialiased selection:bg-teal-100 selection:text-teal-900">
@@ -90,14 +100,6 @@
                         <i data-lucide="sliders-horizontal" class="w-4 h-4 text-slate-500"></i>
                         <span class="flex-1 text-left">自訂帳戶與分類</span>
                     </button>
-                    <button id="sidebar-btn-import" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-all">
-                        <i data-lucide="upload" class="w-4 h-4 text-slate-500"></i>
-                        <span class="flex-1 text-left">從 Google Sheets 匯入 CSV</span>
-                    </button>
-                    <button id="sidebar-btn-export" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-all">
-                        <i data-lucide="download" class="w-4 h-4 text-slate-500"></i>
-                        <span class="flex-1 text-left">匯出 Google Sheets CSV</span>
-                    </button>
                 </div>
             </div>
 
@@ -115,7 +117,7 @@
             </div>
         </div>
         <div class="p-4 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-400 text-center">
-            Google Apps Script & Gemini 3.5 Ready
+            Google Apps Script & Gemini 3.5 Flash Lite Ready
         </div>
     </aside>
 
@@ -133,19 +135,6 @@
                         </div>
                         <h1 class="text-sm sm:text-base font-bold tracking-tight text-slate-900 truncate">財務儀表板</h1>
                     </div>
-                </div>
-
-                <!-- Center Nav (Desktop) -->
-                <div class="hidden md:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 text-xs font-semibold">
-                    <button class="nav-view-btn px-3 py-1.5 rounded-lg transition-all bg-white text-teal-800 shadow-xs font-bold" data-view="dashboard">
-                        📊 財務儀表板
-                    </button>
-                    <button class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all" data-view="ai-bookkeeping">
-                        ✨ AI 智慧記帳
-                    </button>
-                    <button class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all" data-view="manual-bookkeeping">
-                        ✍️ 手動表單記帳
-                    </button>
                 </div>
 
                 <!-- Right Actions -->
@@ -308,15 +297,11 @@
             <!-- Ledger Table & Filter -->
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
                 <div class="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/50">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                    <div class="flex items-center justify-between gap-3 mb-3">
                         <h3 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                             <span>流水帳明細資料庫</span>
                             <span id="ledger-badge-count" class="text-[11px] font-semibold bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full">0 筆</span>
                         </h3>
-                        <div class="flex items-center gap-2">
-                            <button id="btn-export-csv" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl">匯出 CSV</button>
-                            <button id="btn-import-modal" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl">匯入 Sheets</button>
-                        </div>
                     </div>
 
                     <div class="bg-white p-3 rounded-xl border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
@@ -366,18 +351,18 @@
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs text-slate-700 min-w-[650px]">
+                    <table class="w-full text-left text-xs text-slate-700">
                         <thead class="bg-slate-50/80 text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
                             <tr>
-                                <th class="py-3 px-4">日期 / 時間</th>
-                                <th class="py-3 px-4">支付帳戶</th>
-                                <th class="py-3 px-4">項目說明</th>
-                                <th class="py-3 px-4">分類</th>
-                                <th class="py-3 px-4">幣別</th>
-                                <th class="py-3 px-4 text-right">原始金額</th>
-                                <th class="py-3 px-4 text-right">折算基準幣</th>
-                                <th class="py-3 px-4">備註</th>
-                                <th class="py-3 px-4 text-center">操作</th>
+                                <th class="col-datetime py-3 px-3 sm:px-4">日期 / 時間</th>
+                                <th class="col-account hidden md:table-cell py-3 px-4">支付帳戶</th>
+                                <th class="col-name hidden md:table-cell py-3 px-4">項目說明</th>
+                                <th class="col-category py-3 px-2 sm:px-4">分類</th>
+                                <th class="col-currency py-3 px-2 sm:px-4">幣別</th>
+                                <th class="col-original-amount hidden md:table-cell py-3 px-4 text-right">原始金額</th>
+                                <th class="col-converted-amount py-3 px-3 sm:px-4 text-right">折算基準幣</th>
+                                <th class="col-note hidden md:table-cell py-3 px-4">備註</th>
+                                <th class="col-actions py-3 px-2 sm:px-4 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody id="transaction-rows" class="divide-y divide-slate-100"></tbody>
@@ -677,26 +662,6 @@
         </div>
     </div>
 
-    <!-- Import Modal -->
-    <div id="import-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-3 sm:p-4">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-100">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 class="text-sm sm:text-base font-bold text-slate-900">匯入 CSV 記帳資料</h3>
-                <button class="modal-close p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <div class="space-y-3 pt-3 text-xs">
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">貼上 CSV 內容（8 欄位格式）：</label>
-                    <textarea id="import-csv-textarea" rows="5" placeholder="日期,時間,帳戶,項目名稱,分類,幣別,金額,備註..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-slate-800 font-mono text-[11px]"></textarea>
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" class="modal-close px-3 py-1.5 text-slate-600">取消</button>
-                    <button id="btn-submit-import" class="px-4 py-1.5 bg-teal-700 text-white font-semibold rounded-xl">匯入至試算表</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed bottom-4 right-4 left-4 sm:left-auto z-50 flex flex-col gap-2 pointer-events-none"></div>
 
@@ -820,23 +785,7 @@
                 });
             }
 
-            const sidebarImport = document.getElementById('sidebar-btn-import');
-            if (sidebarImport) {
-                sidebarImport.addEventListener('click', () => {
-                    closeSidebar();
-                    openModal(document.getElementById('import-modal'));
-                });
-            }
-
-            const sidebarExport = document.getElementById('sidebar-btn-export');
-            if (sidebarExport) {
-                sidebarExport.addEventListener('click', () => {
-                    closeSidebar();
-                    document.getElementById('btn-export-csv')?.click();
-                });
-            }
-
-            document.querySelectorAll('.nav-view-btn').forEach(btn => {
+            document.querySelectorAll('#sidebar-drawer .nav-view-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const targetView = btn.getAttribute('data-view');
                     if (targetView) {
@@ -858,15 +807,6 @@
                 if (views[key]) {
                     if (key === viewName) views[key].classList.remove('hidden');
                     else views[key].classList.add('hidden');
-                }
-            });
-
-            document.querySelectorAll('header .nav-view-btn').forEach(btn => {
-                const v = btn.getAttribute('data-view');
-                if (v === viewName) {
-                    btn.className = 'nav-view-btn px-3 py-1.5 rounded-lg transition-all bg-white text-teal-800 shadow-xs font-bold';
-                } else {
-                    btn.className = 'nav-view-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all';
                 }
             });
 
@@ -945,6 +885,13 @@
                         showToast('讀取試算表設定失敗: ' + err, 'error');
                     })
                     .getCustomSettings();
+            } else {
+                if (!customSettings.accounts || customSettings.accounts.length === 0) {
+                    customSettings.accounts = ['現金', 'LINE Pay', 'LINE Bank', '郵局', '永豐銀行', '國泰世華', '玉山銀行', '悠遊卡', '街口支付', '台新Richart'];
+                    customSettings.categories = ['食', '衣', '住', '行', '育樂', '學習費用', '醫療/雜項', '收入', '投資', '初始資產', '代墊款', '代墊回收', '內部轉帳'];
+                }
+                populateSettingsOptions();
+                renderSettingsModalLists();
             }
         }
 
@@ -960,6 +907,19 @@
                         showToast('讀取試算表資料失敗: ' + err, 'error');
                     })
                     .getSheetData();
+            } else {
+                if (rawTransactions.length === 0) {
+                    const today = new Date().toISOString().split('T')[0];
+                    rawTransactions = [
+                        { id: 1, rowNumber: 2, date: today, time: "12:30", account: "LINE Pay", name: "日式豚骨拉麵", category: "食", currency: "TWD", amount: -280, note: "午餐" },
+                        { id: 2, rowNumber: 3, date: today, time: "10:15", account: "悠遊卡", name: "捷運交通乘車", category: "行", currency: "TWD", amount: -35, note: "通勤" },
+                        { id: 3, rowNumber: 4, date: today, time: "09:00", account: "永豐銀行", name: "專案接案收入", category: "收入", currency: "TWD", amount: 28000, note: "第一期款" },
+                        { id: 4, rowNumber: 5, date: "2026-08-19", time: "19:40", account: "現金", name: "成田免稅伴手禮", category: "育樂", currency: "JPY", amount: -4500, note: "機場購買" },
+                        { id: 5, rowNumber: 6, date: "2026-08-18", time: "14:20", account: "國泰世華", name: "伺服器託管訂閱", category: "學習費用", currency: "USD", amount: -20, note: "Cloud" }
+                    ];
+                }
+                populateYearFilter();
+                applyFiltersAndRecompute();
             }
         }
 
@@ -1019,14 +979,70 @@
 
         window.removeAccountSetting = function(idx) {
             if (customSettings.accounts.length <= 1) return showToast('至少需保留 1 個帳戶', 'error');
-            customSettings.accounts.splice(idx, 1);
-            renderSettingsModalLists();
+            const accountName = customSettings.accounts[idx];
+            if (!accountName) return;
+
+            const confirmed = confirm('刪除此項目將會一併清除後端所有包含該帳戶/分類的流水帳歷史記錄，確定刪除？');
+            if (!confirmed) return;
+
+            if (window.google && google.script && google.script.run) {
+                showToast(`正在刪除帳戶「${accountName}」及關聯歷史記錄...`, 'info');
+                google.script.run
+                    .withSuccessHandler((res) => {
+                        customSettings.accounts.splice(idx, 1);
+                        renderSettingsModalLists();
+                        populateSettingsOptions();
+                        fetchCustomSettings();
+                        fetchTransactions();
+                        showToast(res?.message || `已成功刪除帳戶「${accountName}」並完成級聯清理！`, 'success');
+                    })
+                    .withFailureHandler((err) => {
+                        showToast('級聯刪除失敗: ' + err, 'error');
+                    })
+                    .deleteAccountCascade(accountName);
+            } else {
+                // 本地預覽模式級聯清理
+                customSettings.accounts.splice(idx, 1);
+                rawTransactions = rawTransactions.filter(t => (t.account || '').trim() !== accountName.trim());
+                renderSettingsModalLists();
+                populateSettingsOptions();
+                applyFiltersAndRecompute();
+                showToast(`已刪除帳戶「${accountName}」及關聯流水帳歷史記錄！`, 'success');
+            }
         };
 
         window.removeCategorySetting = function(idx) {
             if (customSettings.categories.length <= 1) return showToast('至少需保留 1 個分類', 'error');
-            customSettings.categories.splice(idx, 1);
-            renderSettingsModalLists();
+            const categoryName = customSettings.categories[idx];
+            if (!categoryName) return;
+
+            const confirmed = confirm('刪除此項目將會一併清除後端所有包含該帳戶/分類的流水帳歷史記錄，確定刪除？');
+            if (!confirmed) return;
+
+            if (window.google && google.script && google.script.run) {
+                showToast(`正在刪除分類「${categoryName}」及關聯歷史記錄...`, 'info');
+                google.script.run
+                    .withSuccessHandler((res) => {
+                        customSettings.categories.splice(idx, 1);
+                        renderSettingsModalLists();
+                        populateSettingsOptions();
+                        fetchCustomSettings();
+                        fetchTransactions();
+                        showToast(res?.message || `已成功刪除分類「${categoryName}」並完成級聯清理！`, 'success');
+                    })
+                    .withFailureHandler((err) => {
+                        showToast('級聯刪除失敗: ' + err, 'error');
+                    })
+                    .deleteCategoryCascade(categoryName);
+            } else {
+                // 本地預覽模式級聯清理
+                customSettings.categories.splice(idx, 1);
+                rawTransactions = rawTransactions.filter(t => (t.category || '').trim() !== categoryName.trim());
+                renderSettingsModalLists();
+                populateSettingsOptions();
+                applyFiltersAndRecompute();
+                showToast(`已刪除分類「${categoryName}」及關聯流水帳歷史記錄！`, 'success');
+            }
         };
 
         function initSettingsUI() {
@@ -1279,21 +1295,21 @@
                     const convertedAmount = convertCurrency(t.amount, t.currency, currentBaseCurrency);
                     return `
                         <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="py-2.5 px-4 whitespace-nowrap">
-                                <div class="font-medium text-slate-900">${t.date || ''}</div>
-                                <div class="text-[10px] text-slate-400 font-mono">${t.time || ''}</div>
+                            <td class="col-datetime py-2.5 px-3 sm:px-4 whitespace-nowrap">
+                                <div class="font-medium text-slate-900">${escapeHtml(t.date || '')}</div>
+                                <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(t.time || '')}</div>
                             </td>
-                            <td class="py-2.5 px-4 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-700">${t.account || '現金'}</span></td>
-                            <td class="py-2.5 px-4 font-medium text-slate-800">${escapeHtml(t.name || '')}</td>
-                            <td class="py-2.5 px-4 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[11px] bg-teal-50 text-teal-800">${t.category || '食'}</span></td>
-                            <td class="py-2.5 px-4 whitespace-nowrap font-mono font-bold text-slate-700">${(t.currency || 'TWD').toUpperCase()}</td>
-                            <td class="py-2.5 px-4 whitespace-nowrap text-right font-mono font-bold ${isIncome ? 'text-emerald-600' : 'text-rose-600'}">${isIncome ? '+' : ''}${t.amount.toLocaleString()}</td>
-                            <td class="py-2.5 px-4 whitespace-nowrap text-right font-mono text-slate-600">${formatMoney(convertedAmount, currentBaseCurrency)}</td>
-                            <td class="py-2.5 px-4 text-slate-500 max-w-[150px] truncate">${escapeHtml(t.note || '-')}</td>
-                            <td class="py-2.5 px-4 whitespace-nowrap text-center">
+                            <td class="col-account hidden md:table-cell py-2.5 px-4 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-700">${escapeHtml(t.account || '現金')}</span></td>
+                            <td class="col-name hidden md:table-cell py-2.5 px-4 font-medium text-slate-800">${escapeHtml(t.name || '')}</td>
+                            <td class="col-category py-2.5 px-2 sm:px-4 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[11px] bg-teal-50 text-teal-800 font-medium">${escapeHtml(t.category || '食')}</span></td>
+                            <td class="col-currency py-2.5 px-2 sm:px-4 whitespace-nowrap font-mono font-bold text-slate-700 text-xs">${(t.currency || 'TWD').toUpperCase()}</td>
+                            <td class="col-original-amount hidden md:table-cell py-2.5 px-4 whitespace-nowrap text-right font-mono font-bold ${isIncome ? 'text-emerald-600' : 'text-rose-600'}">${isIncome ? '+' : ''}${t.amount.toLocaleString()}</td>
+                            <td class="col-converted-amount py-2.5 px-3 sm:px-4 whitespace-nowrap text-right font-mono font-bold ${isIncome ? 'text-emerald-600' : 'text-rose-600'}">${formatMoney(convertedAmount, currentBaseCurrency)}</td>
+                            <td class="col-note hidden md:table-cell py-2.5 px-4 text-slate-500 max-w-[150px] truncate">${escapeHtml(t.note || '-')}</td>
+                            <td class="col-actions py-2.5 px-2 sm:px-4 whitespace-nowrap text-center">
                                 <div class="inline-flex items-center gap-1">
-                                    <button onclick="openEditModal(${t.id || t.rowNumber})" class="p-1 text-slate-400 hover:text-indigo-600" title="編輯"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
-                                    <button onclick="deleteTransactionItem(${t.id || t.rowNumber})" class="p-1 text-slate-400 hover:text-rose-600" title="刪除"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                                    <button onclick="openEditModal(${t.id || t.rowNumber})" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors" title="編輯"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+                                    <button onclick="deleteTransactionItem(${t.id || t.rowNumber})" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors" title="刪除"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -1327,7 +1343,6 @@
                 renderSettingsModalLists();
                 openModal(document.getElementById('settings-modal'));
             });
-            document.getElementById('btn-import-modal')?.addEventListener('click', () => openModal(document.getElementById('import-modal')));
 
             document.querySelectorAll('.modal-close').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -1357,6 +1372,13 @@
                         })
                         .withFailureHandler(err => showToast('新增失敗: ' + err, 'error'))
                         .addTransaction(newItem);
+                } else {
+                    newItem.id = Date.now();
+                    newItem.rowNumber = rawTransactions.length + 2;
+                    rawTransactions.unshift(newItem);
+                    applyFiltersAndRecompute();
+                    closeModal(document.getElementById('manual-modal'));
+                    showToast('已成功新增記帳紀錄！', 'success');
                 }
             });
 
@@ -1382,71 +1404,15 @@
                         })
                         .withFailureHandler(err => showToast('更新失敗: ' + err, 'error'))
                         .updateTransaction(id, updatedItem);
-                }
-            });
-
-            // CSV 匯入提交
-            document.getElementById('btn-submit-import')?.addEventListener('click', () => {
-                const text = (document.getElementById('import-csv-textarea')?.value || '').trim();
-                if (!text) return showToast('請先貼上 CSV 內容', 'error');
-                const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-                if (lines.length <= 1) return showToast('CSV 無有效資料列', 'error');
-                
-                const newItems = [];
-                const startIdx = (lines[0].includes('日期') || lines[0].toLowerCase().includes('date')) ? 1 : 0;
-                for (let i = startIdx; i < lines.length; i++) {
-                    const cols = lines[i].split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
-                    if (cols.length >= 7) {
-                        newItems.push({
-                            date: cols[0],
-                            time: cols[1] || '12:00',
-                            account: cols[2] || '現金',
-                            name: cols[3] || '未命名',
-                            category: cols[4] || '食',
-                            currency: (cols[5] || 'TWD').toUpperCase(),
-                            amount: parseFloat(cols[6]) || 0,
-                            note: cols[7] || ''
-                        });
+                } else {
+                    const idx = rawTransactions.findIndex(t => String(t.id || t.rowNumber) === String(id));
+                    if (idx !== -1) {
+                        rawTransactions[idx] = { ...rawTransactions[idx], ...updatedItem };
+                        applyFiltersAndRecompute();
                     }
+                    closeModal(document.getElementById('edit-modal'));
+                    showToast('已成功更新記帳紀錄！', 'success');
                 }
-                if (newItems.length === 0) return showToast('無法解析 CSV 資料，請確認格式', 'error');
-
-                if (window.google && google.script && google.script.run) {
-                    google.script.run
-                        .withSuccessHandler(res => {
-                            showToast(`成功匯入 ${newItems.length} 筆資料至試算表！`, 'success');
-                            closeModal(document.getElementById('import-modal'));
-                            document.getElementById('import-csv-textarea').value = '';
-                            fetchTransactions();
-                        })
-                        .withFailureHandler(err => showToast('匯入失敗: ' + err, 'error'))
-                        .batchAddTransactions(newItems);
-                }
-            });
-
-            // CSV 匯出
-            document.getElementById('btn-export-csv')?.addEventListener('click', () => {
-                if (rawTransactions.length === 0) return showToast('目前無資料可供匯出', 'error');
-                const headers = ['日期', '時間', '帳戶', '項目名稱', '分類', '幣別', '金額', '備註'];
-                const rows = rawTransactions.map(t => [
-                    `"${t.date || ''}"`,
-                    `"${t.time || ''}"`,
-                    `"${t.account || ''}"`,
-                    `"${(t.name || '').replace(/"/g, '""')}"`,
-                    `"${t.category || ''}"`,
-                    `"${t.currency || ''}"`,
-                    t.amount,
-                    `"${(t.note || '').replace(/"/g, '""')}"`
-                ]);
-                const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.setAttribute('download', `financial_export_${new Date().toISOString().split('T')[0]}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                showToast('已匯出 CSV 檔案！', 'success');
             });
         }
 
@@ -1476,6 +1442,10 @@
                     .withSuccessHandler(() => { showToast('已從試算表刪除明細', 'success'); fetchTransactions(); })
                     .withFailureHandler(err => showToast('刪除失敗: ' + err, 'error'))
                     .deleteTransaction(id);
+            } else {
+                rawTransactions = rawTransactions.filter(t => String(t.id || t.rowNumber) !== String(id));
+                applyFiltersAndRecompute();
+                showToast('已刪除記帳明細', 'success');
             }
         };
 
